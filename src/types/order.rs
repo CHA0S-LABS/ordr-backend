@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Side of the order — mirrors the on-chain Side enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "order_side", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Side {
     Bid,
     Ask,

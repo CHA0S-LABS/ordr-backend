@@ -1,22 +1,44 @@
+use axum::routing::post;
 use axum::{routing::get, Router};
+use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_pubkey::Pubkey;
 use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::api::handlers::health::health;
 use crate::api::handlers::makers::get_makers;
+use crate::api::handlers::match_order::match_order;
 pub mod handlers;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
+    pub rpc_client: Arc<RpcClient>,
+    pub program_id: Pubkey,
+    pub base_mint: Pubkey,
+    pub quote_mint: Pubkey,
 }
 
-pub async fn run(pool: PgPool, addr: &str) {
-    let state = Arc::new(AppState { pool });
+pub async fn run(
+    pool: PgPool,
+    rpc_client: Arc<RpcClient>,
+    program_id: Pubkey,
+    base_mint: Pubkey,
+    quote_mint: Pubkey,
+    addr: &str,
+) {
+    let state = Arc::new(AppState {
+        pool,
+        rpc_client,
+        program_id,
+        base_mint,
+        quote_mint,
+    });
 
     let app = Router::new()
         .route("/health", get(health))
         .route("/makers", get(get_makers))
+        .route("/match_order", post(match_order))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

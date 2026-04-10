@@ -6,48 +6,33 @@ description = "Indexer, engine, and API for Ordr.trade continuous mode CLOB"
 default-run = "ordr-backend"
 
 [dependencies]
-# Async runtime
 tokio = { version = "1", features = ["full"] }
-
-# Solana client
 solana-client = "2.2"
-solana-sdk = "2.2"
 solana-account-decoder = "2.2"
-
-# Token
 spl-associated-token-account = "6"
- 
-# Utils
 dirs = "6"
-
-# Database
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "macros"] }
-
-# Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bs58 = "0.5"
-
-
-
-# WebSocket
 tungstenite = "0.24"
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 futures-util = "0.3"
 url = "2"
-
-# Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-# Config
 dotenvy = "0.15"
-
-# HTTP API
-axum = "0.8"
-
-# Error handling
 thiserror = "2"
 anyhow = "1"
+solana-pubkey = "2.2"
+solana-message = "2.2"
+solana-transaction = "2.2"
+solana-instruction = "2.2"
+solana-commitment-config = "2.2"
+axum = "0.8.8"
+base64 = "0.22.1"
+bincode = "1"
 
-
+# [[bin]]
+# name = "test_engine"
+# path = "src/bin/test_engine.rs"

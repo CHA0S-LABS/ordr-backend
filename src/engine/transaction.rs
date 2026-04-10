@@ -5,10 +5,8 @@
 //! accounts fully resolved, including maker owner ATAs.
 
 use anyhow::Result;
-use solana_sdk::{
-    instruction::{AccountMeta, Instruction},
-    pubkey::Pubkey,
-};
+use solana_instruction::{AccountMeta, Instruction};
+use solana_pubkey::Pubkey;
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::engine::fill_plan::FillPlan;
