@@ -160,8 +160,6 @@ pub async fn match_taker_order(pool: &PgPool, taker_order: TakerOrder) -> Result
 /// For a taker BID: fetches asks, cheapest first.
 /// For a taker ASK: fetches bids, most expensive first.
 ///
-/// Joins with markets table to get vault/slab addresses needed for
-/// transaction construction.
 async fn fetch_counterparty_orders(
     pool: &PgPool,
     taker_order: &TakerOrder,
@@ -169,10 +167,23 @@ async fn fetch_counterparty_orders(
     let rows = match taker_order.side {
         // Taker is buying → match against asks (cheapest first, largest size, earliest id).
         Side::Bid => {
-            sqlx::query_as::<_, (
-                String, i64, String, i64, i64, i64, i64, i64,
-                String, String, String, String,
-            )>(
+            sqlx::query_as::<
+                _,
+                (
+                    String,
+                    i64,
+                    String,
+                    i64,
+                    i64,
+                    i64,
+                    i64,
+                    i64,
+                    String,
+                    String,
+                    String,
+                    String,
+                ),
+            >(
                 r#"
                 SELECT
                     o.market_address,
@@ -203,10 +214,23 @@ async fn fetch_counterparty_orders(
         }
         // Taker is selling → match against bids (most expensive first, largest size, earliest id).
         Side::Ask => {
-            sqlx::query_as::<_, (
-                String, i64, String, i64, i64, i64, i64, i64,
-                String, String, String, String,
-            )>(
+            sqlx::query_as::<
+                _,
+                (
+                    String,
+                    i64,
+                    String,
+                    i64,
+                    i64,
+                    i64,
+                    i64,
+                    i64,
+                    String,
+                    String,
+                    String,
+                    String,
+                ),
+            >(
                 r#"
                 SELECT
                     o.market_address,

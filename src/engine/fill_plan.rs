@@ -19,7 +19,7 @@ pub struct TakerOrder {
     pub size: u64,
 
     /// Slippage protection (optional).
-    /// For bids: max price the taker will pay. 
+    /// For bids: max price the taker will pay.
     /// For asks: min price the taker will accept.
     pub limit_price: Option<u64>,
 

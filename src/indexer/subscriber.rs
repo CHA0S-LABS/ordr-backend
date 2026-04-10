@@ -13,7 +13,8 @@ use solana_client::{
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     rpc_filter::{Memcmp, RpcFilterType},
 };
-use solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey};
+use solana_commitment_config::CommitmentConfig;
+use solana_pubkey::Pubkey;
 use sqlx::PgPool;
 use tracing::{debug, error, info, warn};
 
@@ -84,15 +85,9 @@ const REDISCOVERY_INTERVAL: u64 = 5;
 /// Discovers all maker market PDAs for the given base/quote pair
 /// by scanning program accounts with memcmp filters on base_mint and quote_mint.
 pub fn discover_markets(config: &Config) -> Result<HashMap<String, TrackedMarket>> {
-    let rpc = RpcClient::new_with_commitment(
-        &config.rpc_url,
-        CommitmentConfig::confirmed(),
-    );
+    let rpc = RpcClient::new_with_commitment(&config.rpc_url, CommitmentConfig::confirmed());
 
-    let program_id: Pubkey = config
-        .program_id
-        .parse()
-        .context("Invalid PROGRAM_ID")?;
+    let program_id: Pubkey = config.program_id.parse().context("Invalid PROGRAM_ID")?;
 
     let base_mint_bytes = bs58::decode(&config.base_mint)
         .into_vec()
@@ -215,11 +210,10 @@ pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
         let rpc_url = config.rpc_url.clone();
 
         // Fetch all account data in one blocking task.
-        let fetch_result = tokio::task::spawn_blocking(move || {
-            fetch_all_accounts(&rpc_url, &markets_snapshot)
-        })
-        .await
-        .context("Slab fetch task panicked")?;
+        let fetch_result =
+            tokio::task::spawn_blocking(move || fetch_all_accounts(&rpc_url, &markets_snapshot))
+                .await
+                .context("Slab fetch task panicked")?;
 
         match fetch_result {
             Ok(fetched) => {
@@ -229,10 +223,8 @@ pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
                 for entry in &fetched {
                     let market_changed =
                         state.has_changed(&entry.market_address, &entry.market_data);
-                    let bid_changed =
-                        state.has_changed(&entry.bid_address, &entry.bid_data);
-                    let ask_changed =
-                        state.has_changed(&entry.ask_address, &entry.ask_data);
+                    let bid_changed = state.has_changed(&entry.bid_address, &entry.bid_data);
+                    let ask_changed = state.has_changed(&entry.ask_address, &entry.ask_data);
 
                     if !bid_changed && !ask_changed && !market_changed {
                         skipped += 1;
@@ -243,10 +235,7 @@ pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
                     let fresh_market = match parse_market(&entry.market_data) {
                         Ok(m) => m,
                         Err(e) => {
-                            error!(
-                                "Failed to parse market {}: {e:#}",
-                                entry.market_address
-                            );
+                            error!("Failed to parse market {}: {e:#}", entry.market_address);
                             continue;
                         }
                     };
@@ -312,17 +301,17 @@ pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
 
                     synced += 1;
                 }
-if synced > 0 {
-    info!(
-        "Poll #{}: {synced} market(s) synced, {skipped} unchanged",
-        state.poll_count
-    );
-} else {
-    info!(
-        "Poll #{}: no changes ({skipped} market(s) unchanged)",
-        state.poll_count
-    );
-}
+                if synced > 0 {
+                    info!(
+                        "Poll #{}: {synced} market(s) synced, {skipped} unchanged",
+                        state.poll_count
+                    );
+                } else {
+                    info!(
+                        "Poll #{}: no changes ({skipped} market(s) unchanged)",
+                        state.poll_count
+                    );
+                }
             }
             Err(e) => {
                 error!("Slab fetch error: {e:#}");

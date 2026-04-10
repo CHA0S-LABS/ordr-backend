@@ -1,5 +1,7 @@
 use anyhow::Result;
-use ordr_matching_engine::{config, db, indexer};
+use ordr_backend::{api, config, db, indexer};
+use solana_client::nonblocking::rpc_client::RpcClient;
+use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -15,7 +17,7 @@ async fn main() -> Result<()> {
 
     let config = config::Config::from_env()?;
 
-    info!("Starting Ordr Matching Engine");
+    info!("Starting Ordr Backend");
     info!("RPC: {}", config.rpc_url);
     info!("Program: {}", config.program_id);
     info!("Base mint: {}", config.base_mint);
@@ -23,6 +25,11 @@ async fn main() -> Result<()> {
 
     let pool = db::pool::create_pool(&config.database_url).await?;
     db::migrations::run_migrations(&pool).await?;
+
+    let rpc_client = Arc::new(RpcClient::new(config.rpc_url.clone()));
+    let program_id = config.program_id.parse()?;
+    let base_mint = config.base_mint.parse()?;
+    let quote_mint = config.quote_mint.parse()?;
 
     let indexer_pool = pool.clone();
     let indexer_config = config.clone();
@@ -35,15 +42,27 @@ async fn main() -> Result<()> {
     });
 
     info!("Indexer started");
-    info!("Engine ready (call engine::matcher::match_taker_order)");
 
-    // TODO Phase 3: Start Axum API server here.
-    // let api_pool = pool.clone();
-    // let api_handle = tokio::spawn(async move {
-    //     api::server::run(api_pool, "0.0.0.0:3000").await
-    // });
+    let api_pool = pool.clone();
+    let api_rpc = rpc_client.clone();
+    let api_handle = tokio::spawn(async move {
+        api::run(
+            api_pool,
+            api_rpc,
+            program_id,
+            base_mint,
+            quote_mint,
+            "0.0.0.0:8080",
+        )
+        .await
+    });
 
-    indexer_handle.await?;
+    info!("API listening on 0.0.0.0:8080");
+
+    tokio::select! {
+        _ = indexer_handle => {},
+        _ = api_handle => {},
+    }
 
     Ok(())
 }

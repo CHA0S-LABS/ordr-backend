@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Side of the order — mirrors the on-chain Side enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "order_side", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Side {
     Bid,
     Ask,
@@ -86,7 +87,9 @@ impl IndexedOrder {
     /// Computes the actual price in quote token units.
     /// actual_price = mid_price + offset * tick_size
     pub fn actual_price(&self) -> Option<i64> {
-        self.offset.checked_mul(self.tick_size)?.checked_add(self.mid_price)
+        self.offset
+            .checked_mul(self.tick_size)?
+            .checked_add(self.mid_price)
     }
 
     /// Returns the remaining unfilled size.
