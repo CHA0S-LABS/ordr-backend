@@ -111,10 +111,10 @@ pub fn build_match_taker_order_ix(
         };
 
         accounts.push(AccountMeta::new_readonly(maker_market, false)); // [i*5+0]
-        accounts.push(AccountMeta::new(maker_slab, false));            // [i*5+1]
-        accounts.push(AccountMeta::new(base_vault, false));            // [i*5+2]
-        accounts.push(AccountMeta::new(quote_vault, false));           // [i*5+3]
-        accounts.push(AccountMeta::new(maker_owner_ata, false));       // [i*5+4]
+        accounts.push(AccountMeta::new(maker_slab, false)); // [i*5+1]
+        accounts.push(AccountMeta::new(base_vault, false)); // [i*5+2]
+        accounts.push(AccountMeta::new(quote_vault, false)); // [i*5+3]
+        accounts.push(AccountMeta::new(maker_owner_ata, false)); // [i*5+4]
     }
 
     // Instruction data:

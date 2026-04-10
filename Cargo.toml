@@ -43,11 +43,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Config
 dotenvy = "0.15"
 
+# HTTP API
+axum = "0.8"
+
 # Error handling
 thiserror = "2"
 anyhow = "1"
 
-[[bin]]
-name = "test_engine"
-path = "src/bin/test_engine.rs"
 

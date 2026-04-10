@@ -86,7 +86,9 @@ impl IndexedOrder {
     /// Computes the actual price in quote token units.
     /// actual_price = mid_price + offset * tick_size
     pub fn actual_price(&self) -> Option<i64> {
-        self.offset.checked_mul(self.tick_size)?.checked_add(self.mid_price)
+        self.offset
+            .checked_mul(self.tick_size)?
+            .checked_add(self.mid_price)
     }
 
     /// Returns the remaining unfilled size.

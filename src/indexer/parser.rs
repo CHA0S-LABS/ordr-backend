@@ -4,12 +4,10 @@
 //! into `IndexedOrder` structs. The layouts here mirror the on-chain `repr(C)`
 //! structs exactly so we can cast bytes directly.
 
-use anyhow::{Context, Result, bail};
 use crate::types::{IndexedOrder, OrderStatus, Side};
-
+use anyhow::{bail, Context, Result};
 
 // On chain struct sizes (must match the program's repr(C) layouts)
-
 
 const SLAB_HEADER_LEN: usize = 32;
 const INNER_NODE_LEN: usize = 16;
@@ -213,9 +211,7 @@ pub fn parse_market(data: &[u8]) -> Result<ParsedMarket> {
         );
     }
 
-    let pubkey = |start: usize| -> String {
-        bs58::encode(&data[start..start + 32]).into_string()
-    };
+    let pubkey = |start: usize| -> String { bs58::encode(&data[start..start + 32]).into_string() };
 
     let u64_at = |start: usize| -> Result<u64> {
         Ok(u64::from_le_bytes(data[start..start + 8].try_into()?))

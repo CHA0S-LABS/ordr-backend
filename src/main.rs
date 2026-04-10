@@ -1,5 +1,5 @@
 use anyhow::Result;
-use ordr_matching_engine::{config, db, indexer};
+use ordr_backend::{api, config, db, indexer};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -35,15 +35,16 @@ async fn main() -> Result<()> {
     });
 
     info!("Indexer started");
-    info!("Engine ready (call engine::matcher::match_taker_order)");
 
-    // TODO Phase 3: Start Axum API server here.
-    // let api_pool = pool.clone();
-    // let api_handle = tokio::spawn(async move {
-    //     api::server::run(api_pool, "0.0.0.0:3000").await
-    // });
+    let api_pool = pool.clone();
+    let api_handle = tokio::spawn(async move { api::run(api_pool, "0.0.0.0:3000").await });
 
-    indexer_handle.await?;
+    info!("API listening on 0.0.0.0:3000");
+
+    tokio::select! {
+        _ = indexer_handle => {},
+        _ = api_handle => {},
+    }
 
     Ok(())
 }
