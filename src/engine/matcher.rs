@@ -160,8 +160,6 @@ pub async fn match_taker_order(pool: &PgPool, taker_order: TakerOrder) -> Result
 /// For a taker BID: fetches asks, cheapest first.
 /// For a taker ASK: fetches bids, most expensive first.
 ///
-/// Joins with markets table to get vault/slab addresses needed for
-/// transaction construction.
 async fn fetch_counterparty_orders(
     pool: &PgPool,
     taker_order: &TakerOrder,

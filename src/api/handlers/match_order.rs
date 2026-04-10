@@ -11,11 +11,16 @@ use crate::api::AppState;
 use crate::engine::{fill_plan::TakerOrder, matcher, transaction};
 use crate::types::Side;
 
+/// Token decimal scale factor. Both mints use 0 decimals, so 1 UI unit = 1 raw unit.
+const TOKEN_DECIMALS: f64 = 1.0;
+
 #[derive(Debug, Deserialize)]
 pub struct MatchRequest {
     pub side: Side,
-    pub size: u64,
-    pub limit_price: Option<u64>,
+    /// Size in human-readable token units (e.g. 0.1 = 100_000 base units)
+    pub size: f64,
+    /// Limit price in human-readable units (optional)
+    pub limit_price: Option<f64>,
     pub taker: String,
     pub taker_base_ata: String,
     pub taker_quote_ata: String,
@@ -32,8 +37,8 @@ pub async fn match_order(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let taker_order = TakerOrder {
         side: req.side,
-        size: req.size,
-        limit_price: req.limit_price,
+        size: (req.size * TOKEN_DECIMALS).round() as u64,
+        limit_price: req.limit_price.map(|p| (p * TOKEN_DECIMALS).round() as u64),
         taker: req.taker.clone(),
         taker_base_ata: req.taker_base_ata,
         taker_quote_ata: req.taker_quote_ata,
@@ -56,6 +61,13 @@ pub async fn match_order(
             Json(serde_json::json!({ "error": "no liquidity" })),
         );
     }
+
+    // Cap at 1 fill to avoid same-slab aliasing in the on-chain program.
+    // When two fills hit the same slab, `borrow_unchecked_mut` is called twice
+    // on the same account, causing UB that makes best_mut() return None on the
+    // second pass. One fill per transaction is safe and sufficient for now.
+    let mut plan = plan;
+    plan.fills.truncate(1);
 
     let ix = match transaction::build_match_taker_order_ix(
         &state.program_id,

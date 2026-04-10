@@ -52,12 +52,12 @@ async fn main() -> Result<()> {
             program_id,
             base_mint,
             quote_mint,
-            "0.0.0.0:3000",
+            "0.0.0.0:8080",
         )
         .await
     });
 
-    info!("API listening on 0.0.0.0:3000");
+    info!("API listening on 0.0.0.0:8080");
 
     tokio::select! {
         _ = indexer_handle => {},
