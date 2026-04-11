@@ -8,6 +8,8 @@ use std::sync::Arc;
 use crate::api::handlers::health::health;
 use crate::api::handlers::makers::get_makers;
 use crate::api::handlers::match_order::match_order;
+use crate::api::handlers::orderbook::get_orderbook;
+use crate::api::handlers::orders::get_orders;
 pub mod handlers;
 
 #[derive(Clone)]
@@ -38,6 +40,7 @@ pub async fn run(
     let app = Router::new()
         .route("/health", get(health))
         .route("/makers", get(get_makers))
+        .route("/orderbook", get(get_orderbook))
         .route("/match_order", post(match_order))
         .with_state(state);
 
