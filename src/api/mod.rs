@@ -41,6 +41,7 @@ pub async fn run(
         .route("/health", get(health))
         .route("/makers", get(get_makers))
         .route("/orderbook", get(get_orderbook))
+        .route("/orders", get(get_orders))
         .route("/match_order", post(match_order))
         .with_state(state);
 
