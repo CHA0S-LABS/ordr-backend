@@ -27,8 +27,7 @@ struct MakerOrderRow {
     tick_size: i64,
     bid_address: String,
     ask_address: String,
-    base_vault: String,
-    quote_vault: String,
+    vault_address: String,
 }
 
 impl MakerOrderRow {
@@ -129,8 +128,7 @@ pub async fn match_taker_order(pool: &PgPool, taker_order: TakerOrder) -> Result
             quote_amount,
             bid_address: order.bid_address.clone(),
             ask_address: order.ask_address.clone(),
-            base_vault: order.base_vault.clone(),
-            quote_vault: order.quote_vault.clone(),
+            vault_address: order.vault_address.clone(),
             maker_owner: order.owner.clone(),
         });
 
@@ -181,7 +179,6 @@ async fn fetch_counterparty_orders(
                     String,
                     String,
                     String,
-                    String,
                 ),
             >(
                 r#"
@@ -196,8 +193,7 @@ async fn fetch_counterparty_orders(
                     o.tick_size,
                     m.bid_address,
                     m.ask_address,
-                    m.base_vault,
-                    m.quote_vault
+                    m.vault_address
                 FROM orders o
                 JOIN markets m ON o.market_address = m.market_address
                 WHERE o.side = 'ask'
@@ -228,7 +224,6 @@ async fn fetch_counterparty_orders(
                     String,
                     String,
                     String,
-                    String,
                 ),
             >(
                 r#"
@@ -243,8 +238,7 @@ async fn fetch_counterparty_orders(
                     o.tick_size,
                     m.bid_address,
                     m.ask_address,
-                    m.base_vault,
-                    m.quote_vault
+                    m.vault_address
                 FROM orders o
                 JOIN markets m ON o.market_address = m.market_address
                 WHERE o.side = 'bid'
@@ -280,8 +274,7 @@ async fn fetch_counterparty_orders(
                 tick_size: r.7,
                 bid_address: r.8,
                 ask_address: r.9,
-                base_vault: r.10,
-                quote_vault: r.11,
+                vault_address: r.10,
                 side,
             }
         })
@@ -319,8 +312,7 @@ mod tests {
             quote_amount: 150 * 153,
             bid_address: "b".to_string(),
             ask_address: "a".to_string(),
-            base_vault: "bv".to_string(),
-            quote_vault: "qv".to_string(),
+            vault_address: "v".to_string(),
             maker_owner: "o".to_string(),
         });
 
@@ -337,8 +329,7 @@ mod tests {
             quote_amount: 350 * 157,
             bid_address: "b".to_string(),
             ask_address: "a".to_string(),
-            base_vault: "bv".to_string(),
-            quote_vault: "qv".to_string(),
+            vault_address: "v".to_string(),
             maker_owner: "o".to_string(),
         });
 
@@ -386,8 +377,7 @@ mod tests {
             quote_amount: 300 * 149,
             bid_address: "b".to_string(),
             ask_address: "a".to_string(),
-            base_vault: "bv".to_string(),
-            quote_vault: "qv".to_string(),
+            vault_address: "v".to_string(),
             maker_owner: "o".to_string(),
         });
 

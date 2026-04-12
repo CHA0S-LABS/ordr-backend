@@ -165,7 +165,7 @@ pub fn parse_slab_orders(
     Ok(orders)
 }
 
-/// On-chain Market struct field offsets (256 bytes total).
+/// On-chain Market struct field offsets (192 bytes total).
 ///
 /// Used to extract mid_price, tick_size, and account pubkeys
 /// from the market PDA account data.
@@ -173,25 +173,21 @@ pub fn parse_slab_orders(
 /// Layout:
 ///   base_mint:   [u8; 32]  bytes   0..32
 ///   quote_mint:  [u8; 32]  bytes  32..64
-///   base_vault:  [u8; 32]  bytes  64..96
-///   quote_vault: [u8; 32]  bytes  96..128
-///   authority:   [u8; 32]  bytes 128..160
-///   bid:         [u8; 32]  bytes 160..192
-///   ask:         [u8; 32]  bytes 192..224
-///   tick_size:   u64       bytes 224..232
-///   mid:         u64       bytes 232..240
-///   lot_size:    u64       bytes 240..248
-///   bump:        u8        byte  248
-///   _padding:    [u8; 7]   bytes 249..256
-pub const MARKET_LEN: usize = 256;
+///   authority:   [u8; 32]  bytes  64..96
+///   bid:         [u8; 32]  bytes  96..128
+///   ask:         [u8; 32]  bytes 128..160
+///   tick_size:   u64       bytes 160..168
+///   mid:         u64       bytes 168..176
+///   lot_size:    u64       bytes 176..184
+///   bump:        u8        byte  184
+///   _padding:    [u8; 7]   bytes 185..192
+pub const MARKET_LEN: usize = 192;
 
 /// Parsed market state extracted from raw account data.
 #[derive(Debug, Clone)]
 pub struct ParsedMarket {
     pub base_mint: String,
     pub quote_mint: String,
-    pub base_vault: String,
-    pub quote_vault: String,
     pub authority: String,
     pub bid_address: String,
     pub ask_address: String,
@@ -220,15 +216,13 @@ pub fn parse_market(data: &[u8]) -> Result<ParsedMarket> {
     Ok(ParsedMarket {
         base_mint: pubkey(0),
         quote_mint: pubkey(32),
-        base_vault: pubkey(64),
-        quote_vault: pubkey(96),
-        authority: pubkey(128),
-        bid_address: pubkey(160),
-        ask_address: pubkey(192),
-        tick_size: u64_at(224)?,
-        mid_price: u64_at(232)?,
-        lot_size: u64_at(240)?,
-        bump: data[248],
+        authority: pubkey(64),
+        bid_address: pubkey(96),
+        ask_address: pubkey(128),
+        tick_size: u64_at(160)?,
+        mid_price: u64_at(168)?,
+        lot_size: u64_at(176)?,
+        bump: data[184],
     })
 }
 
@@ -254,7 +248,7 @@ mod tests {
 
     #[test]
     fn market_len_matches() {
-        // Market struct: 7 * 32 (pubkeys) + 3 * 8 (u64s) + 1 (bump) + 7 (pad) = 256
-        assert_eq!(MARKET_LEN, 7 * 32 + 3 * 8 + 1 + 7);
+        // Market struct: 5 * 32 (pubkeys) + 3 * 8 (u64s) + 1 (bump) + 7 (pad) = 192
+        assert_eq!(MARKET_LEN, 5 * 32 + 3 * 8 + 1 + 7);
     }
 }

@@ -246,14 +246,26 @@ pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
                             entry.market_address, fresh_market.mid_price
                         );
 
+                        let vault_address = match fresh_market.authority.parse::<Pubkey>() {
+                            Ok(authority_pk) => {
+                                let program_pk: Pubkey =
+                                    config.program_id.parse().unwrap_or_default();
+                                let (vault_pda, _) = Pubkey::find_program_address(
+                                    &[b"vault", authority_pk.as_ref()],
+                                    &program_pk,
+                                );
+                                vault_pda.to_string()
+                            }
+                            Err(_) => String::new(),
+                        };
+
                         if let Err(e) = crate::db::queries::upsert_market(
                             &pool,
                             &entry.market_address,
                             &fresh_market.authority,
                             &fresh_market.base_mint,
                             &fresh_market.quote_mint,
-                            &fresh_market.base_vault,
-                            &fresh_market.quote_vault,
+                            &vault_address,
                             &fresh_market.bid_address,
                             &fresh_market.ask_address,
                             fresh_market.tick_size as i64,
