@@ -1,0 +1,19 @@
+[package]
+name = "ordr-setup-client"
+version = "0.1.0"
+edition = "2021"
+description = "Test client to create markets and place orders on Ordr for devnet testing"
+
+[dependencies]
+solana-client = "2.2"
+solana-sdk = "2.2"
+spl-token = "7"
+spl-associated-token-account = "6"
+anyhow = "1"
+bs58 = "0.5"
+dirs = "6"
+solana-program = "2.2"
+
+[[bin]]
+name = "place_test_order"
+path = "src/bin/place_test_order.rs"
