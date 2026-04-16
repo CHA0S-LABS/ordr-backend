@@ -1,0 +1,1 @@
+ RPC_URL=https://api.devnet.solana.com cargo run -- GHyuDLbmPP6MKZjn1naSSfX9bNqN5FDL6wCd6nUqzgWs
