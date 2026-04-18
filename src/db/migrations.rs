@@ -37,8 +37,7 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
             authority       TEXT NOT NULL,
             base_mint       TEXT NOT NULL,
             quote_mint      TEXT NOT NULL,
-            base_vault      TEXT NOT NULL,
-            quote_vault     TEXT NOT NULL,
+            vault_address   TEXT NOT NULL DEFAULT '',
             bid_address     TEXT NOT NULL,
             ask_address     TEXT NOT NULL,
             tick_size       BIGINT NOT NULL,
@@ -51,6 +50,7 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     )
     .execute(pool)
     .await?;
+
 
     // Orders table — every active order across all maker books.
     // Composite key: (market_address, order_id, side) uniquely identifies an order.

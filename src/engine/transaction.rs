@@ -86,33 +86,19 @@ pub fn build_match_taker_order_ix(
                 .map_err(|e| anyhow::anyhow!("Invalid bid address: {e}"))?,
         };
 
-        let base_vault: Pubkey = fill
-            .base_vault
+        let vault_pda: Pubkey = fill
+            .vault_address
             .parse()
-            .map_err(|e| anyhow::anyhow!("Invalid base vault: {e}"))?;
-        let quote_vault: Pubkey = fill
-            .quote_vault
-            .parse()
-            .map_err(|e| anyhow::anyhow!("Invalid quote vault: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("Invalid vault address: {e}"))?;
 
-        let maker_owner: Pubkey = fill
-            .maker_owner
-            .parse()
-            .map_err(|e| anyhow::anyhow!("Invalid maker owner: {e}"))?;
-
-        // Resolve maker owner's ATA:
-        //   Taker buying (Bid) → maker sells base, receives quote → maker's quote ATA
-        //   Taker selling (Ask) → maker buys base, receives base → maker's base ATA
-        let maker_owner_ata = match taker_order.side {
-            Side::Bid => get_associated_token_address(&maker_owner, quote_mint),
-            Side::Ask => get_associated_token_address(&maker_owner, base_mint),
-        };
+        let vault_base_ata = get_associated_token_address(&vault_pda, base_mint);
+        let vault_quote_ata = get_associated_token_address(&vault_pda, quote_mint);
 
         accounts.push(AccountMeta::new_readonly(maker_market, false)); // [i*5+0]
         accounts.push(AccountMeta::new(maker_slab, false)); // [i*5+1]
-        accounts.push(AccountMeta::new(base_vault, false)); // [i*5+2]
-        accounts.push(AccountMeta::new(quote_vault, false)); // [i*5+3]
-        accounts.push(AccountMeta::new(maker_owner_ata, false)); // [i*5+4]
+        accounts.push(AccountMeta::new_readonly(vault_pda, false)); // [i*5+2]
+        accounts.push(AccountMeta::new(vault_base_ata, false)); // [i*5+3]
+        accounts.push(AccountMeta::new(vault_quote_ata, false)); // [i*5+4]
     }
 
     // Instruction data:

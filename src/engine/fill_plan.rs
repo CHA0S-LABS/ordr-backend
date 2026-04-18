@@ -60,11 +60,8 @@ pub struct Fill {
     /// The maker's market ask slab address.
     pub ask_address: String,
 
-    /// The maker's base vault address.
-    pub base_vault: String,
-
-    /// The maker's quote vault address.
-    pub quote_vault: String,
+    /// The maker's global vault PDA address (["vault", maker_authority]).
+    pub vault_address: String,
 
     /// Owner of the maker order.
     pub maker_owner: String,

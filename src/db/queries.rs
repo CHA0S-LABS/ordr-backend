@@ -12,8 +12,7 @@ pub async fn upsert_market(
     authority: &str,
     base_mint: &str,
     quote_mint: &str,
-    base_vault: &str,
-    quote_vault: &str,
+    vault_address: &str,
     bid_address: &str,
     ask_address: &str,
     tick_size: i64,
@@ -25,11 +24,12 @@ pub async fn upsert_market(
         r#"
         INSERT INTO markets (
             market_address, authority, base_mint, quote_mint,
-            base_vault, quote_vault, bid_address, ask_address,
+            vault_address, bid_address, ask_address,
             tick_size, lot_size, mid_price, bump, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
         ON CONFLICT (market_address) DO UPDATE SET
             mid_price = EXCLUDED.mid_price,
+            vault_address = EXCLUDED.vault_address,
             updated_at = NOW()
         "#,
     )
@@ -37,8 +37,7 @@ pub async fn upsert_market(
     .bind(authority)
     .bind(base_mint)
     .bind(quote_mint)
-    .bind(base_vault)
-    .bind(quote_vault)
+    .bind(vault_address)
     .bind(bid_address)
     .bind(ask_address)
     .bind(tick_size)
