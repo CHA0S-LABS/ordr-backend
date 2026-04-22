@@ -96,7 +96,9 @@ pub fn build_match_taker_order_ix(
             Pubkey::find_program_address(&[b"vault", maker_authority.as_ref()], program_id);
 
         let vault_base_ata = get_associated_token_address(&vault_pda, base_mint);
+        println!("vault ka base ata: {}", vault_base_ata);
         let vault_quote_ata = get_associated_token_address(&vault_pda, quote_mint);
+        println!("vault ka quote ata: {}", vault_quote_ata);
 
         accounts.push(AccountMeta::new_readonly(maker_market, false)); // [i*5+0]
         accounts.push(AccountMeta::new(maker_slab, false)); // [i*5+1]
