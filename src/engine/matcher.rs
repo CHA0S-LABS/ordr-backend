@@ -27,7 +27,7 @@ struct MakerOrderRow {
     tick_size: i64,
     bid_address: String,
     ask_address: String,
-    vault_address: String,
+    maker_authority: String,
 }
 
 impl MakerOrderRow {
@@ -128,7 +128,7 @@ pub async fn match_taker_order(pool: &PgPool, taker_order: TakerOrder) -> Result
             quote_amount,
             bid_address: order.bid_address.clone(),
             ask_address: order.ask_address.clone(),
-            vault_address: order.vault_address.clone(),
+            maker_authority: order.maker_authority.clone(),
             maker_owner: order.owner.clone(),
         });
 
@@ -189,18 +189,18 @@ async fn fetch_counterparty_orders(
                     o."offset",
                     o.size,
                     o.filled_size,
-                    o.mid_price,
+                    m.mid_price,
                     o.tick_size,
                     m.bid_address,
                     m.ask_address,
-                    m.vault_address
+                    m.authority
                 FROM orders o
                 JOIN markets m ON o.market_address = m.market_address
                 WHERE o.side = 'ask'
                   AND o.status IN ('open', 'partiallyfilled')
                   AND o.size > o.filled_size
                 ORDER BY
-                    (o.mid_price + o."offset" * o.tick_size) ASC,
+                    (m.mid_price + o."offset" * o.tick_size) ASC,
                     (o.size - o.filled_size) DESC,
                     o.order_id ASC
                 "#,
@@ -234,18 +234,18 @@ async fn fetch_counterparty_orders(
                     o."offset",
                     o.size,
                     o.filled_size,
-                    o.mid_price,
+                    m.mid_price,
                     o.tick_size,
                     m.bid_address,
                     m.ask_address,
-                    m.vault_address
+                    m.authority
                 FROM orders o
                 JOIN markets m ON o.market_address = m.market_address
                 WHERE o.side = 'bid'
                   AND o.status IN ('open', 'partiallyfilled')
                   AND o.size > o.filled_size
                 ORDER BY
-                    (o.mid_price + o."offset" * o.tick_size) DESC,
+                    (m.mid_price + o."offset" * o.tick_size) DESC,
                     (o.size - o.filled_size) DESC,
                     o.order_id ASC
                 "#,
@@ -274,7 +274,7 @@ async fn fetch_counterparty_orders(
                 tick_size: r.7,
                 bid_address: r.8,
                 ask_address: r.9,
-                vault_address: r.10,
+                maker_authority: r.10,
                 side,
             }
         })
@@ -312,7 +312,7 @@ mod tests {
             quote_amount: 150 * 153,
             bid_address: "b".to_string(),
             ask_address: "a".to_string(),
-            vault_address: "v".to_string(),
+            maker_authority: "auth".to_string(),
             maker_owner: "o".to_string(),
         });
 
@@ -329,7 +329,7 @@ mod tests {
             quote_amount: 350 * 157,
             bid_address: "b".to_string(),
             ask_address: "a".to_string(),
-            vault_address: "v".to_string(),
+            maker_authority: "auth".to_string(),
             maker_owner: "o".to_string(),
         });
 
@@ -377,7 +377,7 @@ mod tests {
             quote_amount: 300 * 149,
             bid_address: "b".to_string(),
             ask_address: "a".to_string(),
-            vault_address: "v".to_string(),
+            maker_authority: "auth".to_string(),
             maker_owner: "o".to_string(),
         });
 

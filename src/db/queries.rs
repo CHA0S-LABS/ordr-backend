@@ -180,13 +180,14 @@ pub async fn delete_stale_orders(
 pub async fn get_best_ask(pool: &PgPool) -> Result<Option<IndexedOrder>> {
     let row = sqlx::query_as::<_, (String, i64, String, i64, i64, i64, i64, i64)>(
         r#"
-        SELECT market_address, order_id, owner, "offset",
-               size, filled_size, mid_price, tick_size
-        FROM orders
-        WHERE side = 'ask'
-          AND status IN ('open', 'partiallyfilled')
-          AND size > filled_size
-        ORDER BY (mid_price + "offset" * tick_size) ASC, order_id ASC
+        SELECT o.market_address, o.order_id, o.owner, o."offset",
+               o.size, o.filled_size, m.mid_price, o.tick_size
+        FROM orders o
+        JOIN markets m ON o.market_address = m.market_address
+        WHERE o.side = 'ask'
+          AND o.status IN ('open', 'partiallyfilled')
+          AND o.size > o.filled_size
+        ORDER BY (m.mid_price + o."offset" * o.tick_size) ASC, o.order_id ASC
         LIMIT 1
         "#,
     )
@@ -213,13 +214,14 @@ pub async fn get_best_ask(pool: &PgPool) -> Result<Option<IndexedOrder>> {
 pub async fn get_best_bid(pool: &PgPool) -> Result<Option<IndexedOrder>> {
     let row = sqlx::query_as::<_, (String, i64, String, i64, i64, i64, i64, i64)>(
         r#"
-        SELECT market_address, order_id, owner, "offset",
-               size, filled_size, mid_price, tick_size
-        FROM orders
-        WHERE side = 'bid'
-          AND status IN ('open', 'partiallyfilled')
-          AND size > filled_size
-        ORDER BY (mid_price + "offset" * tick_size) DESC, order_id ASC
+        SELECT o.market_address, o.order_id, o.owner, o."offset",
+               o.size, o.filled_size, m.mid_price, o.tick_size
+        FROM orders o
+        JOIN markets m ON o.market_address = m.market_address
+        WHERE o.side = 'bid'
+          AND o.status IN ('open', 'partiallyfilled')
+          AND o.size > o.filled_size
+        ORDER BY (m.mid_price + o."offset" * o.tick_size) DESC, o.order_id ASC
         LIMIT 1
         "#,
     )

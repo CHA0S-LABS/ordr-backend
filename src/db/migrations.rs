@@ -51,7 +51,6 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
-
     // Orders table — every active order across all maker books.
     // Composite key: (market_address, order_id, side) uniquely identifies an order.
     // Bid and ask slabs have independent next_id counters, so order_id alone

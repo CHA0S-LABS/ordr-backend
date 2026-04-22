@@ -26,7 +26,7 @@ pub async fn get_orderbook(
     let asks = sqlx::query_as::<_, (i64, i64)>(
         r#"
         SELECT
-    (o.mid_price + o."offset" * o.tick_size)::bigint AS price,
+    (m.mid_price + o."offset" * o.tick_size)::bigint AS price,
     (o.size - o.filled_size)::bigint                 AS remaining_size
 FROM orders o
 JOIN markets m ON o.market_address = m.market_address
@@ -51,7 +51,7 @@ LIMIT 12
     let bids = sqlx::query_as::<_, (i64, i64)>(
         r#"
         SELECT
-    (o.mid_price + o."offset" * o.tick_size)::bigint AS price,
+    (m.mid_price + o."offset" * o.tick_size)::bigint AS price,
     (o.size - o.filled_size)::bigint                 AS remaining_size
 FROM orders o
 JOIN markets m ON o.market_address = m.market_address
@@ -74,7 +74,7 @@ LIMIT 12
     .collect();
 
     let mid = sqlx::query_as::<_, (i64,)>(
-        "SELECT mid_price FROM markets WHERE base_mint = $1 AND quote_mint = $2 LIMIT 1",
+        "SELECT mid_price FROM markets WHERE base_mint = $1 AND quote_mint = $2 ORDER BY updated_at DESC LIMIT 1",
     )
     .bind(&base_mint)
     .bind(&quote_mint)
