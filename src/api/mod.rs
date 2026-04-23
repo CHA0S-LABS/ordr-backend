@@ -10,7 +10,7 @@ use crate::api::handlers::makers::get_makers;
 use crate::api::handlers::match_order::match_order;
 use crate::api::handlers::orderbook::get_orderbook;
 use crate::api::handlers::orders::get_orders;
-use crate::api::handlers::trades::get_trades;
+use crate::api::handlers::trades::{get_trades, record_trade};
 pub mod handlers;
 
 #[derive(Clone)]
@@ -44,7 +44,7 @@ pub async fn run(
         .route("/orderbook", get(get_orderbook))
         .route("/orders", get(get_orders))
         .route("/match_order", post(match_order))
-        .route("/trades", get(get_trades))
+        .route("/trades", get(get_trades).post(record_trade))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

@@ -63,21 +63,6 @@ pub async fn match_order(
         );
     }
 
-    // Record the trade for the recent trades feed.
-    if let (Some(price), filled) = (plan.avg_price, plan.total_filled) {
-        if let Err(e) = queries::insert_trade(
-            &state.pool,
-            price.round() as i64,
-            filled as i64,
-            &plan.taker_order.side,
-            &req.taker,
-        )
-        .await
-        {
-            tracing::warn!("Failed to record trade: {e:#}");
-        }
-    }
-
     // Cap at 1 fill to avoid same-slab aliasing in the on-chain program.
     // When two fills hit the same slab, `borrow_unchecked_mut` is called twice
     // on the same account, causing UB that makes best_mut() return None on the
@@ -146,6 +131,11 @@ pub async fn match_order(
 
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "transaction": encoded })),
+        Json(serde_json::json!({
+            "transaction": encoded,
+            "price": plan.avg_price.unwrap_or(0.0).round() as i64,
+            "size": plan.total_filled as i64,
+            "side": plan.taker_order.side,
+        })),
     )
 }
