@@ -8,6 +8,7 @@ use solana_pubkey::Pubkey;
 use solana_transaction::Transaction;
 
 use crate::api::AppState;
+use crate::db::queries;
 use crate::engine::{fill_plan::TakerOrder, matcher, transaction};
 use crate::types::Side;
 
@@ -60,6 +61,21 @@ pub async fn match_order(
             StatusCode::OK,
             Json(serde_json::json!({ "error": "no liquidity" })),
         );
+    }
+
+    // Record the trade for the recent trades feed.
+    if let (Some(price), filled) = (plan.avg_price, plan.total_filled) {
+        if let Err(e) = queries::insert_trade(
+            &state.pool,
+            price.round() as i64,
+            filled as i64,
+            &plan.taker_order.side,
+            &req.taker,
+        )
+        .await
+        {
+            tracing::warn!("Failed to record trade: {e:#}");
+        }
     }
 
     // Cap at 1 fill to avoid same-slab aliasing in the on-chain program.

@@ -3,3 +3,4 @@ pub mod makers;
 pub mod match_order;
 pub mod orderbook;
 pub mod orders;
+pub mod trades;

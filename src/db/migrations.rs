@@ -97,6 +97,31 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Trades table — records each matched fill for the recent trades feed.
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS trades (
+            id          BIGSERIAL PRIMARY KEY,
+            price       BIGINT NOT NULL,
+            size        BIGINT NOT NULL,
+            side        order_side NOT NULL,
+            taker       TEXT NOT NULL,
+            created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_trades_created_at
+        ON trades (created_at DESC);
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
     info!("Database migrations complete");
     Ok(())
 }
