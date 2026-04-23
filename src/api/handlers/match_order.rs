@@ -8,7 +8,6 @@ use solana_pubkey::Pubkey;
 use solana_transaction::Transaction;
 
 use crate::api::AppState;
-use crate::db::queries;
 use crate::engine::{fill_plan::TakerOrder, matcher, transaction};
 use crate::types::Side;
 
