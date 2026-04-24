@@ -130,6 +130,11 @@ pub async fn match_order(
 
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "transaction": encoded })),
+        Json(serde_json::json!({
+            "transaction": encoded,
+            "price": plan.avg_price.unwrap_or(0.0).round() as i64,
+            "size": plan.total_filled as i64,
+            "side": plan.taker_order.side,
+        })),
     )
 }

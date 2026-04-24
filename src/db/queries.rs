@@ -1,8 +1,95 @@
 use anyhow::Result;
+use serde::Serialize;
 use sqlx::PgPool;
 use tracing::debug;
 
 use crate::types::{IndexedOrder, OrderStatus, Side};
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct Trade {
+    pub id: i64,
+    pub price: i64,
+    pub size: i64,
+    pub side: Side,
+    pub taker: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+pub async fn insert_trade(
+    pool: &PgPool,
+    price: i64,
+    size: i64,
+    side: &Side,
+    taker: &str,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        INSERT INTO trades (price, size, side, taker)
+        VALUES ($1, $2, $3, $4)
+        "#,
+    )
+    .bind(price)
+    .bind(size)
+    .bind(side)
+    .bind(taker)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn get_trades_by_taker(pool: &PgPool, taker: &str, limit: i64) -> Result<Vec<Trade>> {
+    let rows = sqlx::query_as::<_, (i64, i64, i64, Side, String, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT id, price, size, side, taker, created_at
+        FROM trades
+        WHERE taker = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(taker)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| Trade {
+            id: r.0,
+            price: r.1,
+            size: r.2,
+            side: r.3,
+            taker: r.4,
+            created_at: r.5,
+        })
+        .collect())
+}
+
+pub async fn get_recent_trades(pool: &PgPool, limit: i64) -> Result<Vec<Trade>> {
+    let rows = sqlx::query_as::<_, (i64, i64, i64, Side, String, chrono::DateTime<chrono::Utc>)>(
+        r#"
+        SELECT id, price, size, side, taker, created_at
+        FROM trades
+        ORDER BY created_at DESC
+        LIMIT $1
+        "#,
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| Trade {
+            id: r.0,
+            price: r.1,
+            size: r.2,
+            side: r.3,
+            taker: r.4,
+            created_at: r.5,
+        })
+        .collect())
+}
 
 /// Upserts a market's state into the markets table.
 /// Called by the indexer when it discovers or updates a maker's market account.
@@ -180,13 +267,14 @@ pub async fn delete_stale_orders(
 pub async fn get_best_ask(pool: &PgPool) -> Result<Option<IndexedOrder>> {
     let row = sqlx::query_as::<_, (String, i64, String, i64, i64, i64, i64, i64)>(
         r#"
-        SELECT market_address, order_id, owner, "offset",
-               size, filled_size, mid_price, tick_size
-        FROM orders
-        WHERE side = 'ask'
-          AND status IN ('open', 'partiallyfilled')
-          AND size > filled_size
-        ORDER BY (mid_price + "offset" * tick_size) ASC, order_id ASC
+        SELECT o.market_address, o.order_id, o.owner, o."offset",
+               o.size, o.filled_size, m.mid_price, o.tick_size
+        FROM orders o
+        JOIN markets m ON o.market_address = m.market_address
+        WHERE o.side = 'ask'
+          AND o.status IN ('open', 'partiallyfilled')
+          AND o.size > o.filled_size
+        ORDER BY (m.mid_price + o."offset" * o.tick_size) ASC, o.order_id ASC
         LIMIT 1
         "#,
     )
@@ -213,13 +301,14 @@ pub async fn get_best_ask(pool: &PgPool) -> Result<Option<IndexedOrder>> {
 pub async fn get_best_bid(pool: &PgPool) -> Result<Option<IndexedOrder>> {
     let row = sqlx::query_as::<_, (String, i64, String, i64, i64, i64, i64, i64)>(
         r#"
-        SELECT market_address, order_id, owner, "offset",
-               size, filled_size, mid_price, tick_size
-        FROM orders
-        WHERE side = 'bid'
-          AND status IN ('open', 'partiallyfilled')
-          AND size > filled_size
-        ORDER BY (mid_price + "offset" * tick_size) DESC, order_id ASC
+        SELECT o.market_address, o.order_id, o.owner, o."offset",
+               o.size, o.filled_size, m.mid_price, o.tick_size
+        FROM orders o
+        JOIN markets m ON o.market_address = m.market_address
+        WHERE o.side = 'bid'
+          AND o.status IN ('open', 'partiallyfilled')
+          AND o.size > o.filled_size
+        ORDER BY (m.mid_price + o."offset" * o.tick_size) DESC, o.order_id ASC
         LIMIT 1
         "#,
     )

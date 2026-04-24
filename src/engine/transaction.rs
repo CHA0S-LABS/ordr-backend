@@ -86,10 +86,14 @@ pub fn build_match_taker_order_ix(
                 .map_err(|e| anyhow::anyhow!("Invalid bid address: {e}"))?,
         };
 
-        let vault_pda: Pubkey = fill
-            .vault_address
+        let maker_authority: Pubkey = fill
+            .maker_authority
             .parse()
-            .map_err(|e| anyhow::anyhow!("Invalid vault address: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("Invalid maker authority: {e}"))?;
+
+        // Derive global vault PDA: ["vault", authority] under the ordr program.
+        let (vault_pda, _) =
+            Pubkey::find_program_address(&[b"vault", maker_authority.as_ref()], program_id);
 
         let vault_base_ata = get_associated_token_address(&vault_pda, base_mint);
         let vault_quote_ata = get_associated_token_address(&vault_pda, quote_mint);

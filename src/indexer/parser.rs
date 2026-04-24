@@ -195,6 +195,7 @@ pub struct ParsedMarket {
     pub mid_price: u64,
     pub lot_size: u64,
     pub bump: u8,
+    pub base_decimals: u8,
 }
 
 /// Parses a market account's raw data into a `ParsedMarket`.
@@ -223,6 +224,7 @@ pub fn parse_market(data: &[u8]) -> Result<ParsedMarket> {
         mid_price: u64_at(168)?,
         lot_size: u64_at(176)?,
         bump: data[184],
+        base_decimals: data[185],
     })
 }
 
