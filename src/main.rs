@@ -1,7 +1,8 @@
 use anyhow::Result;
-use ordr_backend::{api, config, db, indexer};
+use ordr_backend::{api, config, db, indexer, ws::WsMessage};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -31,11 +32,16 @@ async fn main() -> Result<()> {
     let base_mint = config.base_mint.parse()?;
     let quote_mint = config.quote_mint.parse()?;
 
+    let (ws_tx, _) = broadcast::channel::<WsMessage>(128);
+
     let indexer_pool = pool.clone();
     let indexer_config = config.clone();
+    let indexer_ws_tx = ws_tx.clone();
 
     let indexer_handle = tokio::spawn(async move {
-        if let Err(e) = indexer::subscriber::run_polling_indexer(indexer_config, indexer_pool).await
+        if let Err(e) =
+            indexer::subscriber::run_polling_indexer(indexer_config, indexer_pool, indexer_ws_tx)
+                .await
         {
             tracing::error!("Indexer error: {e:#}");
         }
@@ -45,6 +51,7 @@ async fn main() -> Result<()> {
 
     let api_pool = pool.clone();
     let api_rpc = rpc_client.clone();
+    let api_ws_tx = ws_tx.clone();
     let api_handle = tokio::spawn(async move {
         api::run(
             api_pool,
@@ -52,6 +59,7 @@ async fn main() -> Result<()> {
             program_id,
             base_mint,
             quote_mint,
+            api_ws_tx,
             "0.0.0.0:8080",
         )
         .await

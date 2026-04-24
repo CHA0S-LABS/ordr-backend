@@ -4,6 +4,7 @@ use sqlx::PgPool;
 use tracing::debug;
 
 use crate::types::{IndexedOrder, OrderStatus, Side};
+use crate::ws::{WsOrderbook, WsPriceLevel};
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct Trade {
@@ -259,6 +260,61 @@ pub async fn delete_stale_orders(
         debug!("Deleted {deleted} stale orders from {market_address}");
     }
     Ok(deleted)
+}
+
+pub async fn get_orderbook_snapshot(
+    pool: &PgPool,
+    base_mint: &str,
+    quote_mint: &str,
+) -> Result<WsOrderbook> {
+    let asks: Vec<WsPriceLevel> = sqlx::query_as::<_, (i64, i64)>(
+        r#"
+        SELECT (m.mid_price + o."offset" * o.tick_size)::bigint AS price,
+               (o.size - o.filled_size)::bigint AS size
+        FROM orders o
+        JOIN markets m ON o.market_address = m.market_address
+        WHERE o.side = 'ask' AND o.status IN ('open','partiallyfilled')
+          AND o.size > o.filled_size AND m.base_mint = $1 AND m.quote_mint = $2
+        ORDER BY price ASC LIMIT 12
+        "#,
+    )
+    .bind(base_mint)
+    .bind(quote_mint)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|(price, size)| WsPriceLevel { price, size })
+    .collect();
+
+    let bids: Vec<WsPriceLevel> = sqlx::query_as::<_, (i64, i64)>(
+        r#"
+        SELECT (m.mid_price + o."offset" * o.tick_size)::bigint AS price,
+               (o.size - o.filled_size)::bigint AS size
+        FROM orders o
+        JOIN markets m ON o.market_address = m.market_address
+        WHERE o.side = 'bid' AND o.status IN ('open','partiallyfilled')
+          AND o.size > o.filled_size AND m.base_mint = $1 AND m.quote_mint = $2
+        ORDER BY price DESC LIMIT 12
+        "#,
+    )
+    .bind(base_mint)
+    .bind(quote_mint)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|(price, size)| WsPriceLevel { price, size })
+    .collect();
+
+    let mid = sqlx::query_as::<_, (i64,)>(
+        "SELECT mid_price FROM markets WHERE base_mint = $1 AND quote_mint = $2 ORDER BY updated_at DESC LIMIT 1",
+    )
+    .bind(base_mint)
+    .bind(quote_mint)
+    .fetch_optional(pool)
+    .await?
+    .map(|(m,)| m);
+
+    Ok(WsOrderbook { asks, bids, mid })
 }
 
 /// Fetches the best ask across all markets (lowest actual price).
