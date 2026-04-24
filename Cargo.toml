@@ -33,7 +33,3 @@ solana-commitment-config = "2.2"
 axum = "0.8.8"
 base64 = "0.22.1"
 bincode = "1"
-
-[[bin]]
-name = "test_engine"
-path = "src/bin/test_engine.rs"
