@@ -1,12 +1,14 @@
 <div align="center">
 
+<img src="assets/logo.png" alt="ordr.trade" width="160" />
+
 # ordr-backend
 
-indexer, matching engine, and API for [ordr.trade](https://ordr.trade) the fully on-chain CLOB on Solana.
+Indexer, matching engine, and API for [ordr.trade](https://ordr.trade) - the fully on-chain CLOB on Solana.
 
 [Website](https://ordr.trade) &nbsp;&middot;&nbsp; [X / Twitter](https://x.com/ordrtrade)
 
-![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
+[![Rust CI](https://github.com/ordrdottrade/ordr-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/ordrdottrade/ordr-backend/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ![Solana](https://img.shields.io/badge/Solana-devnet-9945FF?style=flat-square)
 
@@ -18,7 +20,9 @@ The on-chain program handles settlement, but someone has to watch the chain, mai
 
 It polls Solana devnet, indexes all maker market accounts and their critbit slabs into Postgres, runs a priority-sorted matching engine, and exposes a REST API. When a taker submits an order, the backend finds the best fills, constructs the unsigned `match_taker_order` instruction with all accounts resolved, and returns a base64-serialized transaction for the frontend to sign and submit.
 
-Built by Chaos Labs as part of the Ordr initiative to build the order book infrastructure Solana has been missing.
+Part of the ordr ecosystem - see [ordr](https://github.com/ordrdottrade/ordr) for the on-chain program this backend indexes.
+
+Built by Chaos Labs.
 
 <div align="center">
 
@@ -31,29 +35,45 @@ Built by Chaos Labs as part of the Ordr initiative to build the order book infra
 ```mermaid
 flowchart TD
     A[Solana Devnet] -->|polls every 2s| B[Indexer]
-    B -->|syncs orders + markets| C[(Neon Postgres)]
+    B -->|syncs orders + markets| C[(Postgres)]
     C -->|queries best makers| D[Matching Engine]
-    D -->|builds instruction| E[Unsigned Transaction]
-    E -->|returns base64| F[REST API]
-    F -->|signs + sends| G[Frontend / Wallet]
+    D -->|builds unsigned tx| E[REST API]
+    E -->|returns base64| F[Frontend / Wallet]
 ```
-
-## Components
-
-| Crate path                  | What it does                                           |
-| --------------------------- | ------------------------------------------------------ |
-| `src/indexer/`              | Polls devnet, syncs maker slab state to Postgres       |
-| `src/engine/matcher.rs`     | Queries DB, builds a priority-sorted fill plan         |
-| `src/engine/transaction.rs` | Resolves all accounts, builds the unsigned instruction |
-| `src/api/`                  | Axum HTTP server                                       |
 
 ## API
 
-| Method | Route          | Description                                       |
-| ------ | -------------- | ------------------------------------------------- |
-| `GET`  | `/health`      | DB health check                                   |
-| `GET`  | `/makers`      | List all indexed markets                          |
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/health` | DB health check |
+| `GET` | `/makers` | List all indexed markets |
+| `GET` | `/orderbook` | Current order book (12 levels each side) |
+| `GET` | `/orders` | List resting orders, filterable by owner |
 | `POST` | `/match_order` | Match a taker order, returns unsigned transaction |
+| `GET` | `/trades` | Recent trades, filterable by taker |
+| `POST` | `/trades` | Record a settled trade (called internally after match) |
+
+### `GET /orderbook`
+
+Response:
+
+```json
+{
+  "asks": [{ "price": 86500000, "size": 2000000 }],
+  "bids": [{ "price": 86490000, "size": 2000000 }],
+  "mid": 86495000
+}
+```
+
+Prices and sizes are in raw on-chain units (price = ticks x tick_size, size = lots x lot_size).
+
+### `GET /orders`
+
+Query params:
+- `owner` - optional wallet pubkey to filter by maker
+- `history` - set to `"true"` to include filled and cancelled orders (default: open only)
+
+Response: array of order objects with `order_id`, `side`, `offset`, `size`, `filled_size`, `status`, `mid_price`, `tick_size`.
 
 ### `POST /match_order`
 
@@ -70,9 +90,9 @@ Request:
 }
 ```
 
-- `side` `"bid"` (buying base) or `"ask"` (selling base)
-- `size` amount in base token units
-- `limit_price` optional. max price for bids, min price for asks. omit for market order
+- `side` - `"bid"` (buying base) or `"ask"` (selling base)
+- `size` - amount in base token units
+- `limit_price` - optional. max price for bids, min price for asks. omit for market order
 
 Response:
 
@@ -84,38 +104,13 @@ Response:
 
 The frontend decodes this, signs with the taker's wallet, and submits to Solana.
 
-## Setup
+### `GET /trades`
 
-### Environment
+Query params:
+- `taker` - optional wallet pubkey. returns that taker's last 100 trades. omit for 50 most recent across all takers.
 
-```env
-RPC_URL=https://api.devnet.solana.com
-WS_URL=wss://api.devnet.solana.com
-DATABASE_URL=postgresql://...
-PROGRAM_ID=<ordr program pubkey>
-BASE_MINT=<base token mint>
-QUOTE_MINT=<quote token mint>
-POLL_INTERVAL_MS=2000
-RUST_LOG=info
-```
+## Related repos
 
-### Commands
-
-```bash
-make run            # start the backend
-make dev            # start with auto-reload (requires cargo-watch)
-make build          # debug build
-make build-release  # release build
-make test           # run tests
-make lint           # clippy, warnings as errors
-make fmt            # format code
-make db-migrate     # run pending migrations
-```
-
-### Test the matching engine against live DB
-
-The `test_engine` binary is not committed to the repo. Get it from the team Discord and place it at `src/bin/test_engine.rs`, then uncomment the `[[bin]]` entry in `Cargo.toml`.
-
-```bash
-cargo run --bin test_engine
-```
+- [ordr](https://github.com/ordrdottrade/ordr) - on-chain program (canonical entrypoint)
+- [ordr-market-maker](https://github.com/ordrdottrade/ordr-market-maker) - MM bot that places and reprices orders
+- [ordr-frontend](https://github.com/ordrdottrade/ordr-frontend) - Next.js trading UI
