@@ -62,6 +62,7 @@ pub async fn get_orders(
         },
     );
 
+    #[allow(clippy::type_complexity)]
     let rows: Vec<(i64, String, i64, i64, i64, String, i64, i64)> = if let Some(owner) = &q.owner {
         sqlx::query_as(&sql)
             .bind(&base_mint)

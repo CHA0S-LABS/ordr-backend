@@ -93,6 +93,7 @@ pub async fn get_recent_trades(pool: &PgPool, limit: i64) -> Result<Vec<Trade>> 
 
 /// Upserts a market's state into the markets table.
 /// Called by the indexer when it discovers or updates a maker's market account.
+#[allow(clippy::too_many_arguments)]
 pub async fn upsert_market(
     pool: &PgPool,
     market_address: &str,
@@ -159,11 +160,11 @@ pub async fn upsert_order(pool: &PgPool, order: &IndexedOrder) -> Result<()> {
     .bind(&order.market_address)
     .bind(order.order_id)
     .bind(&order.owner)
-    .bind(&order.side)
+    .bind(order.side)
     .bind(order.offset)
     .bind(order.size)
     .bind(order.filled_size)
-    .bind(&order.status)
+    .bind(order.status)
     .bind(order.mid_price)
     .bind(order.tick_size)
     .execute(pool)
@@ -199,11 +200,11 @@ pub async fn batch_upsert_orders(pool: &PgPool, orders: &[IndexedOrder]) -> Resu
         .bind(&order.market_address)
         .bind(order.order_id)
         .bind(&order.owner)
-        .bind(&order.side)
+        .bind(order.side)
         .bind(order.offset)
         .bind(order.size)
         .bind(order.filled_size)
-        .bind(&order.status)
+        .bind(order.status)
         .bind(order.mid_price)
         .bind(order.tick_size)
         .execute(&mut *tx)
@@ -234,7 +235,7 @@ pub async fn delete_stale_orders(
             "#,
         )
         .bind(market_address)
-        .bind(&side)
+        .bind(side)
         .execute(pool)
         .await?;
         return Ok(result.rows_affected());
@@ -249,7 +250,7 @@ pub async fn delete_stale_orders(
         "#,
     )
     .bind(market_address)
-    .bind(&side)
+    .bind(side)
     .bind(active_order_ids)
     .execute(pool)
     .await?;
