@@ -36,7 +36,7 @@ WHERE o.side = 'ask'
   AND m.base_mint = $1
   AND m.quote_mint = $2
 ORDER BY price ASC, remaining_size DESC, o.order_id ASC
-LIMIT 12
+LIMIT 13
         "#,
     )
     .bind(&base_mint)
@@ -61,7 +61,7 @@ WHERE o.side = 'bid'
   AND m.base_mint = $1
   AND m.quote_mint = $2
 ORDER BY price DESC, remaining_size DESC, o.order_id ASC
-LIMIT 12
+LIMIT 13
         "#,
     )
     .bind(&base_mint)
