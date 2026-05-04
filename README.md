@@ -1,3 +1,13 @@
+#### Ecosystem
+
+- **[ordr](https://github.com/CHA0S-LABS/ordr)**: on-chain CLOB program
+- **[ordr-market-maker](https://github.com/CHA0S-LABS/ordr-market-maker)**: MM bot that places and reprices quotes
+- **[ordr-backend](https://github.com/CHA0S-LABS/ordr-backend)**: indexer and REST API
+- **[ordr-frontend](https://github.com/CHA0S-LABS/ordr-frontend)**: web trading UI
+- **[ordr-seeker](https://github.com/CHA0S-LABS/ordr-seeker)**: native mobile trading app for Seeker
+
+---
+
 <div align="center">
 
 <img src="assets/logo.png" alt="ordr.trade" width="160" />
@@ -8,7 +18,7 @@ Indexer and API for [ordr.trade](https://ordr.trade) - the fully on-chain CLOB o
 
 [Website](https://ordr.trade) &nbsp;&middot;&nbsp; [X / Twitter](https://x.com/ordrtrade)
 
-[![Rust CI](https://github.com/ordrdottrade/ordr-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/ordrdottrade/ordr-backend/actions/workflows/ci.yml)
+[![Rust CI](https://github.com/CHA0S-LABS/ordr-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/CHA0S-LABS/ordr-backend/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ![Solana](https://img.shields.io/badge/Solana-devnet-9945FF?style=flat-square)
 
@@ -20,7 +30,7 @@ The on-chain program handles settlement, but someone has to watch the chain, mai
 
 It polls Solana devnet, indexes all maker market accounts and their critbit slabs into Postgres, and exposes a REST API. When a taker submits an order, the backend finds the best fills, constructs the unsigned `match_taker_order` instruction with all accounts resolved, and returns a base64-serialized transaction for the frontend to sign and submit.
 
-Part of the ordr ecosystem - see [ordr](https://github.com/ordrdottrade/ordr) for the on-chain program this backend indexes.
+Part of the ordr ecosystem - see [ordr](https://github.com/CHA0S-LABS/ordr) for the on-chain program this backend indexes.
 
 Built by Chaos Labs.
 
@@ -100,8 +110,3 @@ Query params:
 
 - `taker` - optional wallet pubkey. returns that taker's last 100 trades. omit for 50 most recent across all takers.
 
-## Related repos
-
-- [ordr](https://github.com/ordrdottrade/ordr) - on-chain program (canonical entrypoint)
-- [ordr-market-maker](https://github.com/ordrdottrade/ordr-market-maker) - MM bot that places and reprices orders
-- [ordr-frontend](https://github.com/ordrdottrade/ordr-frontend) - Next.js trading UI
