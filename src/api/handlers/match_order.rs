@@ -35,6 +35,51 @@ pub async fn match_order(
     State(state): State<Arc<AppState>>,
     Json(req): Json<MatchRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    // Validate inputs before touching the DB or building transactions.
+    if !req.size.is_finite() || req.size <= 0.0 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "size must be a positive finite number" })),
+        );
+    }
+    if req.size > 1_000_000.0 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "size exceeds maximum" })),
+        );
+    }
+    if let Some(lp) = req.limit_price {
+        if !lp.is_finite() || lp <= 0.0 {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(
+                    serde_json::json!({ "error": "limit_price must be a positive finite number" }),
+                ),
+            );
+        }
+    }
+    let taker_pubkey: Pubkey = match req.taker.parse() {
+        Ok(pk) => pk,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": "invalid taker pubkey" })),
+            )
+        }
+    };
+    if req.taker_base_ata.parse::<Pubkey>().is_err() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "invalid taker_base_ata" })),
+        );
+    }
+    if req.taker_quote_ata.parse::<Pubkey>().is_err() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "invalid taker_quote_ata" })),
+        );
+    }
+
     let taker_order = TakerOrder {
         side: req.side,
         size: (req.size * TOKEN_DECIMALS).round() as u64,
@@ -99,16 +144,6 @@ pub async fn match_order(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": "failed to fetch blockhash" })),
             );
-        }
-    };
-
-    let taker_pubkey: Pubkey = match req.taker.parse() {
-        Ok(pk) => pk,
-        Err(_) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "error": "invalid taker pubkey" })),
-            )
         }
     };
 
