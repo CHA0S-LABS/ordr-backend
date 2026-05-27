@@ -4,3 +4,4 @@ pub mod db;
 pub mod engine;
 pub mod indexer;
 pub mod types;
+pub mod ws;

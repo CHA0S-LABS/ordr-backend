@@ -4,6 +4,8 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_pubkey::Pubkey;
 use sqlx::PgPool;
 use std::sync::Arc;
+use tokio::sync::broadcast;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::api::handlers::health::health;
 use crate::api::handlers::makers::get_makers;
@@ -11,6 +13,8 @@ use crate::api::handlers::match_order::match_order;
 use crate::api::handlers::orderbook::get_orderbook;
 use crate::api::handlers::orders::get_orders;
 use crate::api::handlers::trades::{get_trades, record_trade};
+use crate::api::handlers::ws::ws_handler;
+use crate::ws::WsMessage;
 pub mod handlers;
 
 #[derive(Clone)]
@@ -20,6 +24,7 @@ pub struct AppState {
     pub program_id: Pubkey,
     pub base_mint: Pubkey,
     pub quote_mint: Pubkey,
+    pub ws_tx: broadcast::Sender<WsMessage>,
 }
 
 pub async fn run(
@@ -28,6 +33,7 @@ pub async fn run(
     program_id: Pubkey,
     base_mint: Pubkey,
     quote_mint: Pubkey,
+    ws_tx: broadcast::Sender<WsMessage>,
     addr: &str,
 ) {
     let state = Arc::new(AppState {
@@ -36,7 +42,13 @@ pub async fn run(
         program_id,
         base_mint,
         quote_mint,
+        ws_tx,
     });
+
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     let app = Router::new()
         .route("/health", get(health))
@@ -45,6 +57,8 @@ pub async fn run(
         .route("/orders", get(get_orders))
         .route("/match_order", post(match_order))
         .route("/trades", get(get_trades).post(record_trade))
+        .route("/ws", get(ws_handler))
+        .layer(cors)
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

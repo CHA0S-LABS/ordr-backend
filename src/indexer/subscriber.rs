@@ -19,8 +19,10 @@ use sqlx::PgPool;
 use tracing::{debug, error, info, warn};
 
 use crate::config::Config;
+use crate::db::queries;
 use crate::indexer::parser::{parse_market, ParsedMarket, MARKET_LEN};
 use crate::indexer::sync;
+use crate::ws::WsMessage;
 
 /// Tracks a discovered maker market and its associated slab accounts.
 #[derive(Debug, Clone)]
@@ -145,7 +147,11 @@ pub fn discover_markets(config: &Config) -> Result<HashMap<String, TrackedMarket
 ///   every REDISCOVERY_INTERVAL poll cycles to pick up new markets.
 /// - Slab data is hashed on each poll. Only changed slabs trigger a DB sync.
 /// - Market account data is also fetched each cycle to detect mid price updates.
-pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
+pub async fn run_polling_indexer(
+    config: Config,
+    pool: PgPool,
+    ws_tx: tokio::sync::broadcast::Sender<WsMessage>,
+) -> Result<()> {
     let poll_interval = tokio::time::Duration::from_millis(config.poll_interval_ms);
 
     info!(
@@ -314,6 +320,19 @@ pub async fn run_polling_indexer(config: Config, pool: PgPool) -> Result<()> {
                     synced += 1;
                 }
                 if synced > 0 {
+                    // Broadcast fresh orderbook snapshot to all WS clients
+                    match queries::get_orderbook_snapshot(
+                        &pool,
+                        &config.base_mint,
+                        &config.quote_mint,
+                    )
+                    .await
+                    {
+                        Ok(snap) => {
+                            let _ = ws_tx.send(WsMessage::Orderbook(snap));
+                        }
+                        Err(e) => warn!("Failed to fetch orderbook for broadcast: {e:#}"),
+                    }
                     info!(
                         "Poll #{}: {synced} market(s) synced, {skipped} unchanged",
                         state.poll_count

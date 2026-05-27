@@ -10,6 +10,7 @@ use serde::Deserialize;
 use crate::api::AppState;
 use crate::db::queries;
 use crate::types::Side;
+use crate::ws::{WsMessage, WsTrade};
 
 #[derive(Debug, Deserialize)]
 pub struct TradesQuery {
@@ -29,7 +30,21 @@ pub async fn record_trade(
     Json(req): Json<RecordTradeRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     match queries::insert_trade(&state.pool, req.price, req.size, &req.side, &req.taker).await {
-        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "ok": true }))),
+        Ok(_) => {
+            if let Ok(trades) = queries::get_trades_by_taker(&state.pool, &req.taker, 1).await {
+                if let Some(t) = trades.into_iter().next() {
+                    let _ = state.ws_tx.send(WsMessage::Trade(WsTrade {
+                        id: t.id,
+                        price: t.price,
+                        size: t.size,
+                        side: format!("{:?}", t.side).to_lowercase(),
+                        taker: t.taker,
+                        created_at: t.created_at.to_rfc3339(),
+                    }));
+                }
+            }
+            (StatusCode::OK, Json(serde_json::json!({ "ok": true })))
+        }
         Err(e) => {
             tracing::error!("Failed to record trade: {e:#}");
             (

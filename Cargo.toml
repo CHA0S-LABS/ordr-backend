@@ -30,6 +30,7 @@ solana-message = "2.2"
 solana-transaction = "2.2"
 solana-instruction = "2.2"
 solana-commitment-config = "2.2"
-axum = "0.8.8"
+axum = { version = "0.8.8", features = ["ws"] }
+tower-http = { version = "0.6", features = ["cors"] }
 base64 = "0.22.1"
 bincode = "1"
